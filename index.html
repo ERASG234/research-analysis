@@ -1,0 +1,2248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pilot Research Analysis Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f7ff',
+                            100: '#e0f0fe',
+                            200: '#b9e2fe',
+                            300: '#7ccbfd',
+                            400: '#36b1fa',
+                            500: '#0c97eb',
+                            600: '#0077c9',
+                            700: '#015fa3',
+                            800: '#065186',
+                            900: '#0b446f'
+                        },
+                        secondary: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a'
+                        },
+                        success: {
+                            50: '#f0fdf4',
+                            500: '#22c55e',
+                            600: '#16a34a'
+                        },
+                        warning: {
+                            50: '#fefce8',
+                            500: '#eab308',
+                            600: '#ca8a04'
+                        },
+                        danger: {
+                            50: '#fef2f2',
+                            500: '#ef4444',
+                            600: '#dc2626'
+                        }
+                    },
+                    fontFamily: {
+                        'inter': ['Inter', 'ui-sans-serif', 'system-ui'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(100%)' },
+                            '100%': { transform: 'translateY(0)' },
+                        }
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
+                        'card': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #dc2626 0%, #2563eb 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .dark .glass-morphism {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .analysis-result {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .data-table {
+            max-height: 400px;
+            overflow: auto;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .dhis2-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .dhis2-card:hover {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            transform: translateY(-1px);
+        }
+        
+        .dark .dhis2-card {
+            background: #1f2937;
+            border: 1px solid #374151;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #dc2626 0%, #2563eb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .dark .login-container {
+            background: rgba(31, 41, 55, 0.95);
+            border: 1px solid rgba(75, 85, 99, 0.3);
+        }
+        
+        .floating-action {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 50;
+        }
+        
+        /* Custom scrollbar */
+        .analysis-result::-webkit-scrollbar,
+        .data-table::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .analysis-result::-webkit-scrollbar-track,
+        .data-table::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .analysis-result::-webkit-scrollbar-thumb,
+        .data-table::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        
+        .analysis-result::-webkit-scrollbar-thumb:hover,
+        .data-table::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+    <!-- Email Authentication Modal -->
+    <div id="auth-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="login-container p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <div class="text-center mb-8">
+                <div class="mb-4">
+                    <i class="fas fa-microscope text-4xl gradient-text"></i>
+                </div>
+                <h2 class="text-2xl font-bold gradient-text mb-2">Pilot Research Analysis</h2>
+                <p class="text-gray-600 dark:text-gray-400 text-sm">Developed by Erasmus Gwidza, MSc</p>
+                <p class="text-gray-500 dark:text-gray-500 text-xs">Secure access to your research platform</p>
+            </div>
+            
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium mb-2">
+                        <i class="fas fa-envelope mr-2 text-primary-500"></i>Email Address
+                    </label>
+                    <input type="email" id="email-input" placeholder="researcher@institution.edu" 
+                        class="w-full p-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-2">
+                        <i class="fas fa-lock mr-2 text-primary-500"></i>Access Code
+                    </label>
+                    <input type="password" id="access-code" placeholder="Enter your access code" 
+                        class="w-full p-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200">
+                </div>
+                
+                <button onclick="authenticateUser()" class="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white py-3 px-4 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Access Platform
+                </button>
+                
+                <div class="text-center text-sm text-gray-500 dark:text-gray-400">
+                    <p class="mb-2">Access credentials:</p>
+                    <p><strong>Admin:</strong> erasmusmgwidza@outlook.com | <strong>Code:</strong> admin2024</p>
+                    <p><strong>Demo:</strong> demo@research.edu | <strong>Code:</strong> demo2024</p>
+                </div>
+            </div>
+            
+            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-center space-x-4 text-xs text-gray-500">
+                    <span><i class="fas fa-shield-alt mr-1"></i>Secure</span>
+                    <span><i class="fas fa-database mr-1"></i>Encrypted</span>
+                    <span><i class="fas fa-user-graduate mr-1"></i>Academic</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application (Hidden initially) -->
+    <div id="main-app" class="hidden">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-2xl relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
+        <div class="absolute top-0 right-0 w-96 h-96 rounded-full bg-white/10 transform translate-x-48 -translate-y-48"></div>
+        <div class="absolute bottom-0 left-0 w-64 h-64 rounded-full bg-white/5 transform -translate-x-32 translate-y-32"></div>
+        
+        <div class="container mx-auto px-4 py-8 relative z-10">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white/20 p-3 rounded-2xl backdrop-blur-lg">
+                        <i class="fas fa-microscope text-2xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-white mb-1">Pilot Research Analysis Platform</h1>
+                        <p class="text-white/80 text-sm flex items-center">
+                            <i class="fas fa-chart-line mr-2"></i>
+                            Advanced Research Intelligence by Erasmus Gwidza, MSc
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="glass-morphism px-4 py-2 rounded-xl text-sm">
+                        <i class="fas fa-database mr-2"></i>
+                        <span id="project-count">0</span> Active Projects
+                    </div>
+                    <div class="glass-morphism px-4 py-2 rounded-xl text-sm">
+                        <i class="fas fa-clock mr-2"></i>
+                        <span id="session-time">00:00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div class="container mx-auto px-4">
+            <div class="flex space-x-0 overflow-x-auto">
+                <button class="tab-btn active px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 border-primary text-primary" data-tab="overview">
+                    📊 Overview
+                </button>
+                <button class="tab-btn px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-primary" data-tab="data-import">
+                    📥 Data Import
+                </button>
+                <button class="tab-btn px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-primary" data-tab="quantitative">
+                    📈 Quantitative Analysis
+                </button>
+                <button class="tab-btn px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-primary" data-tab="qualitative">
+                    📝 Qualitative Analysis
+                </button>
+                <button class="tab-btn px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-primary" data-tab="ai-analysis">
+                    🤖 AI Analysis
+                </button>
+                <button class="tab-btn px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-primary" data-tab="visualization">
+                    📊 Visualization
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Overview Tab -->
+        <div id="overview" class="tab-content active">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div class="bg-gradient-to-br from-red-500 to-red-600 text-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold mb-2">Total Data Points</h3>
+                    <p class="text-3xl font-bold" id="total-data-points">0</p>
+                    <p class="text-red-100 text-sm mt-1">Across all datasets</p>
+                </div>
+                <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold mb-2">Analyses Completed</h3>
+                    <p class="text-3xl font-bold" id="analyses-completed">0</p>
+                    <p class="text-blue-100 text-sm mt-1">Statistical & thematic</p>
+                </div>
+                <div class="bg-gradient-to-br from-red-600 to-blue-600 text-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold mb-2">AI Insights</h3>
+                    <p class="text-3xl font-bold" id="ai-insights">0</p>
+                    <p class="text-red-100 text-sm mt-1">Generated insights</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                    <h3 class="text-xl font-bold mb-4">Recent Activity</h3>
+                    <div id="recent-activity" class="space-y-3">
+                        <p class="text-gray-500 dark:text-gray-400 italic">No recent activity</p>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                    <h3 class="text-xl font-bold mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <button onclick="switchTab('data-import')" class="w-full bg-primary hover:bg-primary-dark text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Import New Data
+                        </button>
+                        <button onclick="switchTab('ai-analysis')" class="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Run AI Analysis
+                        </button>
+                        <button onclick="exportResults()" class="w-full bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Export Results
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Import Tab -->
+        <div id="data-import" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                    <h3 class="text-xl font-bold mb-4">Import Quantitative Data</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">CSV Data</label>
+                            <textarea id="csv-input" placeholder="Paste CSV data here or type manually..." 
+                                class="w-full h-32 p-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Manual Data Entry</label>
+                            <div class="flex space-x-2">
+                                <input type="text" id="manual-data" placeholder="Enter values separated by commas" 
+                                    class="flex-1 p-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <button onclick="addManualData()" class="px-4 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors duration-200">
+                                    Add
+                                </button>
+                            </div>
+                        </div>
+                        <button onclick="processQuantitativeData()" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Process Quantitative Data
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                    <h3 class="text-xl font-bold mb-4">Import Qualitative Data</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Text Data</label>
+                            <textarea id="text-input" placeholder="Paste interview transcripts, survey responses, or other text data..." 
+                                class="w-full h-32 p-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Data Category</label>
+                            <select id="text-category" class="w-full p-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <option value="interview">Interview Transcript</option>
+                                <option value="survey">Survey Response</option>
+                                <option value="observation">Observation Notes</option>
+                                <option value="document">Document Analysis</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <button onclick="processQualitativeData()" class="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Process Qualitative Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Preview -->
+            <div class="mt-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                <h3 class="text-xl font-bold mb-4">Data Preview</h3>
+                <div id="data-preview" class="data-table">
+                    <p class="text-gray-500 dark:text-gray-400 italic">No data imported yet</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quantitative Analysis Tab -->
+        <div id="quantitative" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                    <h3 class="text-xl font-bold mb-4">Statistical Analysis</h3>
+                    <div class="space-y-4">
+                        <button onclick="calculateDescriptiveStats()" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Calculate Descriptive Statistics
+                        </button>
+                        <button onclick="performCorrelationAnalysis()" class="w-full bg-purple-500 hover:bg-purple-600 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Correlation Analysis
+                        </button>
+                        <button onclick="performRegressionAnalysis()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Regression Analysis
+                        </button>
+                        <button onclick="performTTest()" class="w-full bg-teal-500 hover:bg-teal-600 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                            T-Test Analysis
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                    <h3 class="text-xl font-bold mb-4">Analysis Results</h3>
+                    <div id="quant-results" class="analysis-result">
+                        <p class="text-gray-500 dark:text-gray-400 italic">Run an analysis to see results</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Visualization Section -->
+            <div class="mt-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                <h3 class="text-xl font-bold mb-4">Quick Visualizations</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <button onclick="createHistogram()" class="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+                        Histogram
+                    </button>
+                    <button onclick="createBoxPlot()" class="bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+                        Box Plot
+                    </button>
+                    <button onclick="createScatterPlot()" class="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+                        Scatter Plot
+                    </button>
+                </div>
+                <canvas id="quant-chart" class="max-w-full"></canvas>
+            </div>
+        </div>
+
+        <!-- Qualitative Analysis Tab -->
+        <div id="qualitative" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                    <h3 class="text-xl font-bold mb-4">Analysis Tools</h3>
+                    <div class="space-y-4">
+                        <button onclick="performWordFrequency()" class="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Word Frequency Analysis
+                        </button>
+                        <button onclick="performSentimentAnalysis()" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Sentiment Analysis
+                        </button>
+                        <button onclick="identifyThemes()" class="w-full bg-purple-500 hover:bg-purple-600 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Theme Identification
+                        </button>
+                        <button onclick="performCoding()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Content Coding
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                    <h3 class="text-xl font-bold mb-4">Analysis Results</h3>
+                    <div id="qual-results" class="analysis-result">
+                        <p class="text-gray-500 dark:text-gray-400 italic">Run an analysis to see results</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coding Interface -->
+            <div class="mt-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                <h3 class="text-xl font-bold mb-4">Manual Coding Interface</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Text to Code</label>
+                        <textarea id="coding-text" class="w-full h-32 p-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Select or paste text to code..."></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Code/Theme</label>
+                        <input type="text" id="code-name" placeholder="Enter code or theme name" class="w-full p-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent mb-3">
+                        <button onclick="addCode()" class="w-full bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded-lg transition-colors duration-200">
+                            Add Code
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <h4 class="font-semibold mb-2">Applied Codes</h4>
+                    <div id="applied-codes" class="flex flex-wrap gap-2">
+                        <!-- Codes will appear here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Analysis Tab -->
+        <div id="ai-analysis" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                    <h3 class="text-xl font-bold mb-4">AI-Powered Analysis</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Analysis Type</label>
+                            <select id="ai-analysis-type" class="w-full p-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <option value="comprehensive">Comprehensive Analysis</option>
+                                <option value="theme">Theme Extraction</option>
+                                <option value="sentiment">Sentiment Analysis</option>
+                                <option value="summary">Data Summary</option>
+                                <option value="patterns">Pattern Recognition</option>
+                                <option value="insights">Key Insights</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Custom Instructions</label>
+                            <textarea id="ai-instructions" placeholder="Provide specific instructions for the AI analysis..." 
+                                class="w-full h-24 p-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent"></textarea>
+                        </div>
+                        <button onclick="runAIAnalysis()" class="w-full bg-primary hover:bg-primary-dark text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Run AI Analysis
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                    <h3 class="text-xl font-bold mb-4">AI Analysis Results</h3>
+                    <div id="ai-results" class="analysis-result">
+                        <p class="text-gray-500 dark:text-gray-400 italic">Run an AI analysis to see results</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Insights Dashboard -->
+            <div class="mt-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                <h3 class="text-xl font-bold mb-4">AI Insights Dashboard</h3>
+                <div id="ai-insights-dashboard" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- AI insights will appear here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Visualization Tab -->
+        <div id="visualization" class="tab-content">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 mb-6">
+                <h3 class="text-xl font-bold mb-4">Visualization Controls</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Chart Type</label>
+                        <select id="chart-type" class="w-full p-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="bar">Bar Chart</option>
+                            <option value="line">Line Chart</option>
+                            <option value="pie">Pie Chart</option>
+                            <option value="scatter">Scatter Plot</option>
+                            <option value="histogram">Histogram</option>
+                            <option value="box">Box Plot</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Data Source</label>
+                        <select id="data-source" class="w-full p-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="quantitative">Quantitative Data</option>
+                            <option value="qualitative">Qualitative Data</option>
+                            <option value="combined">Combined Data</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="createVisualization()" class="w-full bg-primary hover:bg-primary-dark text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200">
+                            Create Visualization
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+                <h3 class="text-xl font-bold mb-4">Visualization Output</h3>
+                <canvas id="main-chart" class="max-w-full"></canvas>
+            </div>
+        </div>
+    </main>
+    </div>
+
+    <script>
+        // Global variables
+        let quantitativeData = [];
+        let qualitativeData = [];
+        let analysisCount = 0;
+        let aiInsightCount = 0;
+        let appliedCodes = [];
+        let currentChart = null;
+        let analysisResults = {};
+        let aiInsights = [];
+        let workSessions = [];
+        let autoSaveInterval = null;
+
+        // Dark mode handling
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // Tab switching functionality
+        function switchTab(tabName) {
+            // Remove active class from all tabs and buttons
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'border-primary', 'text-primary');
+                btn.classList.add('border-transparent', 'text-gray-600', 'dark:text-gray-400');
+            });
+
+            // Add active class to selected tab and button
+            document.getElementById(tabName).classList.add('active');
+            const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
+            activeBtn.classList.add('active', 'border-primary', 'text-primary');
+            activeBtn.classList.remove('border-transparent', 'text-gray-600', 'dark:text-gray-400');
+        }
+
+        // Tab click handlers
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                switchTab(btn.dataset.tab);
+            });
+        });
+
+        // Data processing functions
+        function processQuantitativeData() {
+            const csvInput = document.getElementById('csv-input').value.trim();
+            if (!csvInput) {
+                showNotification('Please enter CSV data', 'error');
+                return;
+            }
+
+            try {
+                const lines = csvInput.split('\n');
+                const headers = lines[0].split(',').map(h => h.trim());
+                const data = [];
+
+                for (let i = 1; i < lines.length; i++) {
+                    if (lines[i].trim()) {
+                        const values = lines[i].split(',').map(v => {
+                            const num = parseFloat(v.trim());
+                            return isNaN(num) ? v.trim() : num;
+                        });
+                        
+                        const row = {};
+                        headers.forEach((header, index) => {
+                            row[header] = values[index];
+                        });
+                        data.push(row);
+                    }
+                }
+
+                quantitativeData = data;
+                updateDataPreview();
+                updateStats();
+                addActivity('Imported quantitative data', 'success');
+                showNotification('Quantitative data processed successfully!', 'success');
+            } catch (error) {
+                showNotification('Error processing CSV data: ' + error.message, 'error');
+            }
+        }
+
+        function addManualData() {
+            const input = document.getElementById('manual-data').value.trim();
+            if (!input) return;
+
+            try {
+                const values = input.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
+                if (values.length === 0) {
+                    showNotification('Please enter valid numeric values', 'error');
+                    return;
+                }
+
+                const newData = values.map((value, index) => ({
+                    'Index': quantitativeData.length + index + 1,
+                    'Value': value
+                }));
+
+                quantitativeData = quantitativeData.concat(newData);
+                document.getElementById('manual-data').value = '';
+                updateDataPreview();
+                updateStats();
+                addActivity('Added manual data points', 'success');
+                showNotification('Manual data added successfully!', 'success');
+            } catch (error) {
+                showNotification('Error adding manual data: ' + error.message, 'error');
+            }
+        }
+
+        function processQualitativeData() {
+            const textInput = document.getElementById('text-input').value.trim();
+            const category = document.getElementById('text-category').value;
+
+            if (!textInput) {
+                showNotification('Please enter text data', 'error');
+                return;
+            }
+
+            const newEntry = {
+                id: Date.now(),
+                text: textInput,
+                category: category,
+                timestamp: new Date().toISOString(),
+                wordCount: textInput.split(/\s+/).length
+            };
+
+            qualitativeData.push(newEntry);
+            document.getElementById('text-input').value = '';
+            updateDataPreview();
+            updateStats();
+            addActivity(`Added ${category} data`, 'success');
+            showNotification('Qualitative data processed successfully!', 'success');
+        }
+
+        function updateDataPreview() {
+            const preview = document.getElementById('data-preview');
+            let html = '';
+
+            if (quantitativeData.length > 0) {
+                html += '<h4 class="font-semibold mb-2">Quantitative Data:</h4>';
+                html += '<div class="overflow-x-auto"><table class="min-w-full border border-gray-300 dark:border-gray-600 mb-4">';
+                
+                // Headers
+                const headers = Object.keys(quantitativeData[0]);
+                html += '<thead><tr class="bg-gray-100 dark:bg-gray-700">';
+                headers.forEach(header => {
+                    html += `<th class="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">${header}</th>`;
+                });
+                html += '</tr></thead><tbody>';
+
+                // Show first 5 rows
+                quantitativeData.slice(0, 5).forEach(row => {
+                    html += '<tr>';
+                    headers.forEach(header => {
+                        html += `<td class="border border-gray-300 dark:border-gray-600 px-3 py-2">${row[header] || ''}</td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table></div>';
+
+                if (quantitativeData.length > 5) {
+                    html += `<p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Showing 5 of ${quantitativeData.length} rows</p>`;
+                }
+            }
+
+            if (qualitativeData.length > 0) {
+                html += '<h4 class="font-semibold mb-2">Qualitative Data:</h4>';
+                qualitativeData.slice(0, 3).forEach((entry, index) => {
+                    html += `
+                        <div class="border border-gray-300 dark:border-gray-600 p-3 mb-2 rounded">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-medium">${entry.category}</span>
+                                <span class="text-sm text-gray-500">${entry.wordCount} words</span>
+                            </div>
+                            <p class="text-sm">${entry.text.substring(0, 200)}${entry.text.length > 200 ? '...' : ''}</p>
+                        </div>
+                    `;
+                });
+
+                if (qualitativeData.length > 3) {
+                    html += `<p class="text-sm text-gray-600 dark:text-gray-400">Showing 3 of ${qualitativeData.length} entries</p>`;
+                }
+            }
+
+            if (html === '') {
+                html = '<p class="text-gray-500 dark:text-gray-400 italic">No data imported yet</p>';
+            }
+
+            preview.innerHTML = html;
+        }
+
+        function updateStats() {
+            const totalPoints = quantitativeData.length + qualitativeData.length;
+            document.getElementById('total-data-points').textContent = totalPoints;
+            document.getElementById('project-count').textContent = totalPoints > 0 ? '1' : '0';
+            
+            // Add animated counter effect
+            animateCounter('total-data-points', totalPoints);
+            animateCounter('analyses-completed', analysisCount);
+            animateCounter('ai-insights', aiInsightCount);
+        }
+
+        // Statistical analysis functions
+        function calculateDescriptiveStats() {
+            if (quantitativeData.length === 0) {
+                showNotification('No quantitative data available', 'error');
+                return;
+            }
+
+            const numericColumns = Object.keys(quantitativeData[0]).filter(key => {
+                return quantitativeData.every(row => typeof row[key] === 'number');
+            });
+
+            if (numericColumns.length === 0) {
+                showNotification('No numeric columns found', 'error');
+                return;
+            }
+
+            let results = '<h4 class="font-semibold mb-3">Descriptive Statistics</h4>';
+            
+            numericColumns.forEach(column => {
+                const values = quantitativeData.map(row => row[column]).filter(v => !isNaN(v));
+                
+                if (values.length > 0) {
+                    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+                    const sortedValues = [...values].sort((a, b) => a - b);
+                    const median = sortedValues.length % 2 === 0 
+                        ? (sortedValues[sortedValues.length/2 - 1] + sortedValues[sortedValues.length/2]) / 2
+                        : sortedValues[Math.floor(sortedValues.length/2)];
+                    
+                    const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+                    const stdDev = Math.sqrt(variance);
+                    const min = Math.min(...values);
+                    const max = Math.max(...values);
+
+                    results += `
+                        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg mb-3">
+                            <h5 class="font-medium mb-2">${column}</h5>
+                            <div class="grid grid-cols-2 gap-2 text-sm">
+                                <div>Mean: <span class="font-mono">${mean.toFixed(2)}</span></div>
+                                <div>Median: <span class="font-mono">${median.toFixed(2)}</span></div>
+                                <div>Std Dev: <span class="font-mono">${stdDev.toFixed(2)}</span></div>
+                                <div>Range: <span class="font-mono">${min.toFixed(2)} - ${max.toFixed(2)}</span></div>
+                                <div>Count: <span class="font-mono">${values.length}</span></div>
+                                <div>Variance: <span class="font-mono">${variance.toFixed(2)}</span></div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            document.getElementById('quant-results').innerHTML = results;
+            analysisCount++;
+            document.getElementById('analyses-completed').textContent = analysisCount;
+            addActivity('Calculated descriptive statistics', 'success');
+            showNotification('Descriptive statistics calculated successfully!', 'success');
+        }
+
+        function performCorrelationAnalysis() {
+            if (quantitativeData.length < 2) {
+                showNotification('Need at least 2 data points for correlation analysis', 'error');
+                return;
+            }
+
+            const numericColumns = Object.keys(quantitativeData[0]).filter(key => {
+                return quantitativeData.every(row => typeof row[key] === 'number');
+            });
+
+            if (numericColumns.length < 2) {
+                showNotification('Need at least 2 numeric columns for correlation analysis', 'error');
+                return;
+            }
+
+            let results = '<h4 class="font-semibold mb-3">Correlation Analysis</h4>';
+            results += '<div class="overflow-x-auto"><table class="min-w-full border border-gray-300 dark:border-gray-600">';
+            results += '<thead><tr class="bg-gray-100 dark:bg-gray-700"><th class="border border-gray-300 dark:border-gray-600 px-3 py-2">Variables</th><th class="border border-gray-300 dark:border-gray-600 px-3 py-2">Correlation</th><th class="border border-gray-300 dark:border-gray-600 px-3 py-2">Strength</th></tr></thead><tbody>';
+
+            for (let i = 0; i < numericColumns.length; i++) {
+                for (let j = i + 1; j < numericColumns.length; j++) {
+                    const col1 = numericColumns[i];
+                    const col2 = numericColumns[j];
+                    
+                    const values1 = quantitativeData.map(row => row[col1]);
+                    const values2 = quantitativeData.map(row => row[col2]);
+                    
+                    const correlation = calculatePearsonCorrelation(values1, values2);
+                    const strength = getCorrelationStrength(Math.abs(correlation));
+                    
+                    results += `
+                        <tr>
+                            <td class="border border-gray-300 dark:border-gray-600 px-3 py-2">${col1} vs ${col2}</td>
+                            <td class="border border-gray-300 dark:border-gray-600 px-3 py-2 font-mono">${correlation.toFixed(3)}</td>
+                            <td class="border border-gray-300 dark:border-gray-600 px-3 py-2">${strength}</td>
+                        </tr>
+                    `;
+                }
+            }
+
+            results += '</tbody></table></div>';
+            document.getElementById('quant-results').innerHTML = results;
+            analysisCount++;
+            document.getElementById('analyses-completed').textContent = analysisCount;
+            addActivity('Performed correlation analysis', 'success');
+            showNotification('Correlation analysis completed!', 'success');
+        }
+
+        function calculatePearsonCorrelation(x, y) {
+            const n = x.length;
+            const sumX = x.reduce((a, b) => a + b, 0);
+            const sumY = y.reduce((a, b) => a + b, 0);
+            const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+            const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+            const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0);
+
+            const numerator = n * sumXY - sumX * sumY;
+            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+
+            return denominator === 0 ? 0 : numerator / denominator;
+        }
+
+        function getCorrelationStrength(r) {
+            if (r >= 0.7) return 'Strong';
+            if (r >= 0.3) return 'Moderate';
+            if (r >= 0.1) return 'Weak';
+            return 'Very Weak';
+        }
+
+        function performRegressionAnalysis() {
+            const numericColumns = Object.keys(quantitativeData[0] || {}).filter(key => {
+                return quantitativeData.every(row => typeof row[key] === 'number');
+            });
+
+            if (numericColumns.length < 2) {
+                showNotification('Need at least 2 numeric columns for regression analysis', 'error');
+                return;
+            }
+
+            // Simple linear regression between first two numeric columns
+            const xCol = numericColumns[0];
+            const yCol = numericColumns[1];
+            
+            const x = quantitativeData.map(row => row[xCol]);
+            const y = quantitativeData.map(row => row[yCol]);
+            
+            const regression = calculateLinearRegression(x, y);
+            
+            let results = `
+                <h4 class="font-semibold mb-3">Linear Regression Analysis</h4>
+                <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                    <p class="mb-2"><strong>Variables:</strong> ${yCol} = f(${xCol})</p>
+                    <p class="mb-2"><strong>Equation:</strong> y = ${regression.slope.toFixed(3)}x + ${regression.intercept.toFixed(3)}</p>
+                    <p class="mb-2"><strong>R-squared:</strong> ${regression.rSquared.toFixed(3)}</p>
+                    <p class="mb-2"><strong>Correlation:</strong> ${regression.correlation.toFixed(3)}</p>
+                    <p><strong>Sample Size:</strong> ${x.length}</p>
+                </div>
+            `;
+
+            document.getElementById('quant-results').innerHTML = results;
+            analysisCount++;
+            document.getElementById('analyses-completed').textContent = analysisCount;
+            addActivity('Performed regression analysis', 'success');
+            showNotification('Regression analysis completed!', 'success');
+        }
+
+        function calculateLinearRegression(x, y) {
+            const n = x.length;
+            const sumX = x.reduce((a, b) => a + b, 0);
+            const sumY = y.reduce((a, b) => a + b, 0);
+            const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+            const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+            const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0);
+
+            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            const correlation = calculatePearsonCorrelation(x, y);
+            const rSquared = correlation * correlation;
+
+            return { slope, intercept, correlation, rSquared };
+        }
+
+        function performTTest() {
+            const numericColumns = Object.keys(quantitativeData[0] || {}).filter(key => {
+                return quantitativeData.every(row => typeof row[key] === 'number');
+            });
+
+            if (numericColumns.length === 0) {
+                showNotification('No numeric columns found for t-test', 'error');
+                return;
+            }
+
+            // Perform one-sample t-test against mean = 0
+            const column = numericColumns[0];
+            const values = quantitativeData.map(row => row[column]);
+            
+            const mean = values.reduce((a, b) => a + b, 0) / values.length;
+            const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / (values.length - 1);
+            const stdError = Math.sqrt(variance / values.length);
+            const tStatistic = mean / stdError;
+            const degreesOfFreedom = values.length - 1;
+
+            let results = `
+                <h4 class="font-semibold mb-3">One-Sample T-Test</h4>
+                <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                    <p class="mb-2"><strong>Variable:</strong> ${column}</p>
+                    <p class="mb-2"><strong>Sample Mean:</strong> ${mean.toFixed(3)}</p>
+                    <p class="mb-2"><strong>Standard Error:</strong> ${stdError.toFixed(3)}</p>
+                    <p class="mb-2"><strong>T-statistic:</strong> ${tStatistic.toFixed(3)}</p>
+                    <p class="mb-2"><strong>Degrees of Freedom:</strong> ${degreesOfFreedom}</p>
+                    <p class="mb-2"><strong>Sample Size:</strong> ${values.length}</p>
+                    <p><strong>Test:</strong> H₀: μ = 0 vs H₁: μ ≠ 0</p>
+                </div>
+            `;
+
+            document.getElementById('quant-results').innerHTML = results;
+            analysisCount++;
+            document.getElementById('analyses-completed').textContent = analysisCount;
+            addActivity('Performed t-test analysis', 'success');
+            showNotification('T-test analysis completed!', 'success');
+        }
+
+        // Qualitative analysis functions
+        function performWordFrequency() {
+            if (qualitativeData.length === 0) {
+                showNotification('No qualitative data available', 'error');
+                return;
+            }
+
+            const allText = qualitativeData.map(entry => entry.text).join(' ').toLowerCase();
+            const words = allText.split(/\W+/).filter(word => word.length > 3);
+            
+            const wordCount = {};
+            words.forEach(word => {
+                wordCount[word] = (wordCount[word] || 0) + 1;
+            });
+
+            const sortedWords = Object.entries(wordCount)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 20);
+
+            let results = '<h4 class="font-semibold mb-3">Word Frequency Analysis</h4>';
+            results += '<div class="grid grid-cols-1 md:grid-cols-2 gap-2">';
+            
+            sortedWords.forEach(([word, count]) => {
+                const percentage = ((count / words.length) * 100).toFixed(1);
+                results += `
+                    <div class="flex justify-between items-center bg-gray-100 dark:bg-gray-700 p-2 rounded">
+                        <span class="font-medium">${word}</span>
+                        <span class="text-sm">${count} (${percentage}%)</span>
+                    </div>
+                `;
+            });
+
+            results += '</div>';
+            document.getElementById('qual-results').innerHTML = results;
+            analysisCount++;
+            document.getElementById('analyses-completed').textContent = analysisCount;
+            addActivity('Performed word frequency analysis', 'success');
+            showNotification('Word frequency analysis completed!', 'success');
+        }
+
+        function performSentimentAnalysis() {
+            if (qualitativeData.length === 0) {
+                showNotification('No qualitative data available', 'error');
+                return;
+            }
+
+            // Simple sentiment analysis using keyword lists
+            const positiveWords = ['good', 'great', 'excellent', 'amazing', 'wonderful', 'fantastic', 'love', 'like', 'happy', 'pleased', 'satisfied', 'positive'];
+            const negativeWords = ['bad', 'terrible', 'awful', 'horrible', 'hate', 'dislike', 'sad', 'angry', 'frustrated', 'disappointed', 'negative', 'poor'];
+
+            let results = '<h4 class="font-semibold mb-3">Sentiment Analysis</h4>';
+            let totalPositive = 0, totalNegative = 0, totalNeutral = 0;
+
+            qualitativeData.forEach((entry, index) => {
+                const text = entry.text.toLowerCase();
+                const words = text.split(/\W+/);
+                
+                let positiveCount = 0, negativeCount = 0;
+                
+                words.forEach(word => {
+                    if (positiveWords.includes(word)) positiveCount++;
+                    if (negativeWords.includes(word)) negativeCount++;
+                });
+
+                let sentiment = 'Neutral';
+                let sentimentColor = 'text-gray-600';
+                
+                if (positiveCount > negativeCount) {
+                    sentiment = 'Positive';
+                    sentimentColor = 'text-green-600';
+                    totalPositive++;
+                } else if (negativeCount > positiveCount) {
+                    sentiment = 'Negative';
+                    sentimentColor = 'text-red-600';
+                    totalNegative++;
+                } else {
+                    totalNeutral++;
+                }
+
+                results += `
+                    <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg mb-2">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-medium">${entry.category} ${index + 1}</span>
+                            <span class="${sentimentColor} font-medium">${sentiment}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Positive: ${positiveCount}, Negative: ${negativeCount}</p>
+                    </div>
+                `;
+            });
+
+            results += `
+                <div class="mt-4 bg-blue-100 dark:bg-blue-900 p-4 rounded-lg">
+                    <h5 class="font-medium mb-2">Overall Sentiment Distribution</h5>
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                            <div class="text-2xl font-bold text-green-600">${totalPositive}</div>
+                            <div class="text-sm">Positive</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-gray-600">${totalNeutral}</div>
+                            <div class="text-sm">Neutral</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-red-600">${totalNegative}</div>
+                            <div class="text-sm">Negative</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('qual-results').innerHTML = results;
+            analysisCount++;
+            document.getElementById('analyses-completed').textContent = analysisCount;
+            addActivity('Performed sentiment analysis', 'success');
+            showNotification('Sentiment analysis completed!', 'success');
+        }
+
+        function identifyThemes() {
+            if (qualitativeData.length === 0) {
+                showNotification('No qualitative data available', 'error');
+                return;
+            }
+
+            // Simple theme identification based on common phrases
+            const allText = qualitativeData.map(entry => entry.text).join(' ').toLowerCase();
+            const phrases = extractPhrases(allText);
+            
+            let results = '<h4 class="font-semibold mb-3">Theme Identification</h4>';
+            results += '<p class="mb-4 text-sm text-gray-600 dark:text-gray-400">Common phrases and potential themes identified:</p>';
+
+            phrases.slice(0, 10).forEach((phrase, index) => {
+                results += `
+                    <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg mb-2">
+                        <div class="flex justify-between items-center">
+                            <span class="font-medium">Theme ${index + 1}: "${phrase.text}"</span>
+                            <span class="text-sm bg-primary text-white px-2 py-1 rounded">${phrase.count} occurrences</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('qual-results').innerHTML = results;
+            analysisCount++;
+            document.getElementById('analyses-completed').textContent = analysisCount;
+            addActivity('Identified themes', 'success');
+            showNotification('Theme identification completed!', 'success');
+        }
+
+        function extractPhrases(text) {
+            // Extract 2-3 word phrases
+            const words = text.split(/\W+/).filter(word => word.length > 2);
+            const phrases = {};
+
+            for (let i = 0; i < words.length - 1; i++) {
+                const phrase = words.slice(i, i + 2).join(' ');
+                if (phrase.length > 5) {
+                    phrases[phrase] = (phrases[phrase] || 0) + 1;
+                }
+            }
+
+            return Object.entries(phrases)
+                .filter(([phrase, count]) => count > 1)
+                .map(([text, count]) => ({ text, count }))
+                .sort((a, b) => b.count - a.count);
+        }
+
+        function performCoding() {
+            if (qualitativeData.length === 0) {
+                showNotification('No qualitative data available', 'error');
+                return;
+            }
+
+            // Auto-suggest codes based on content
+            const suggestedCodes = generateSuggestedCodes();
+            
+            let results = '<h4 class="font-semibold mb-3">Content Coding Analysis</h4>';
+            results += '<div class="mb-4"><h5 class="font-medium mb-2">Suggested Codes:</h5>';
+            
+            suggestedCodes.forEach(code => {
+                results += `
+                    <span class="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm mr-2 mb-2">
+                        ${code}
+                    </span>
+                `;
+            });
+
+            results += '</div>';
+            
+            if (appliedCodes.length > 0) {
+                results += '<div class="mb-4"><h5 class="font-medium mb-2">Applied Codes Summary:</h5>';
+                const codeCount = {};
+                appliedCodes.forEach(code => {
+                    codeCount[code.name] = (codeCount[code.name] || 0) + 1;
+                });
+
+                Object.entries(codeCount).forEach(([code, count]) => {
+                    results += `
+                        <div class="bg-gray-100 dark:bg-gray-700 p-2 rounded mb-2">
+                            <span class="font-medium">${code}</span>
+                            <span class="text-sm text-gray-600 dark:text-gray-400 ml-2">(${count} instances)</span>
+                        </div>
+                    `;
+                });
+                results += '</div>';
+            }
+
+            document.getElementById('qual-results').innerHTML = results;
+            analysisCount++;
+            document.getElementById('analyses-completed').textContent = analysisCount;
+            addActivity('Performed content coding', 'success');
+            showNotification('Content coding analysis completed!', 'success');
+        }
+
+        function generateSuggestedCodes() {
+            const allText = qualitativeData.map(entry => entry.text).join(' ').toLowerCase();
+            
+            // Category-based suggestions
+            const categories = [...new Set(qualitativeData.map(entry => entry.category))];
+            const topicKeywords = {
+                'satisfaction': ['satisfied', 'happy', 'pleased', 'content'],
+                'concerns': ['worried', 'concerned', 'issue', 'problem'],
+                'experience': ['experience', 'felt', 'encountered', 'went through'],
+                'suggestions': ['suggest', 'recommend', 'should', 'could'],
+                'process': ['process', 'procedure', 'steps', 'method'],
+                'communication': ['told', 'said', 'explained', 'informed'],
+                'time': ['time', 'duration', 'quick', 'slow', 'fast'],
+                'quality': ['quality', 'good', 'bad', 'excellent', 'poor']
+            };
+
+            const suggestedCodes = [];
+            
+            // Add category-based codes
+            categories.forEach(cat => suggestedCodes.push(cat + '-related'));
+            
+            // Add topic-based codes
+            Object.entries(topicKeywords).forEach(([topic, keywords]) => {
+                if (keywords.some(keyword => allText.includes(keyword))) {
+                    suggestedCodes.push(topic);
+                }
+            });
+
+            return suggestedCodes.slice(0, 8);
+        }
+
+        function addCode() {
+            const text = document.getElementById('coding-text').value.trim();
+            const codeName = document.getElementById('code-name').value.trim();
+
+            if (!text || !codeName) {
+                showNotification('Please enter both text and code name', 'error');
+                return;
+            }
+
+            const newCode = {
+                id: Date.now(),
+                text: text,
+                name: codeName,
+                timestamp: new Date().toISOString()
+            };
+
+            appliedCodes.push(newCode);
+            
+            // Add to display
+            const codesContainer = document.getElementById('applied-codes');
+            const codeElement = document.createElement('span');
+            codeElement.className = 'inline-block bg-primary text-white px-3 py-1 rounded-full text-sm mr-2 mb-2';
+            codeElement.innerHTML = `${codeName} <button onclick="removeCode(${newCode.id})" class="ml-2 text-white hover:text-red-200">×</button>`;
+            codesContainer.appendChild(codeElement);
+
+            // Clear inputs
+            document.getElementById('coding-text').value = '';
+            document.getElementById('code-name').value = '';
+
+            addActivity(`Added code: ${codeName}`, 'success');
+            showNotification('Code added successfully!', 'success');
+        }
+
+        function removeCode(codeId) {
+            appliedCodes = appliedCodes.filter(code => code.id !== codeId);
+            // Refresh the codes display
+            const codesContainer = document.getElementById('applied-codes');
+            codesContainer.innerHTML = '';
+            appliedCodes.forEach(code => {
+                const codeElement = document.createElement('span');
+                codeElement.className = 'inline-block bg-primary text-white px-3 py-1 rounded-full text-sm mr-2 mb-2';
+                codeElement.innerHTML = `${code.name} <button onclick="removeCode(${code.id})" class="ml-2 text-white hover:text-red-200">×</button>`;
+                codesContainer.appendChild(codeElement);
+            });
+        }
+
+        // AI Analysis functions
+        async function runAIAnalysis() {
+            const analysisType = document.getElementById('ai-analysis-type').value;
+            const customInstructions = document.getElementById('ai-instructions').value.trim();
+
+            if (quantitativeData.length === 0 && qualitativeData.length === 0) {
+                showNotification('No data available for AI analysis', 'error');
+                return;
+            }
+
+            // Prepare data for AI
+            let dataText = '';
+            
+            if (quantitativeData.length > 0) {
+                dataText += 'QUANTITATIVE DATA:\n';
+                dataText += JSON.stringify(quantitativeData, null, 2) + '\n\n';
+            }
+            
+            if (qualitativeData.length > 0) {
+                dataText += 'QUALITATIVE DATA:\n';
+                qualitativeData.forEach((entry, index) => {
+                    dataText += `Entry ${index + 1} (${entry.category}):\n${entry.text}\n\n`;
+                });
+            }
+
+            // Create analysis prompt
+            let prompt = '';
+            switch (analysisType) {
+                case 'comprehensive':
+                    prompt = 'Provide a comprehensive analysis of this research data. Include statistical insights, qualitative themes, patterns, and actionable recommendations.';
+                    break;
+                case 'theme':
+                    prompt = 'Extract and analyze the main themes from this research data. Provide detailed theme descriptions and supporting evidence.';
+                    break;
+                case 'sentiment':
+                    prompt = 'Perform sentiment analysis on this data. Identify emotional patterns, satisfaction levels, and overall sentiment trends.';
+                    break;
+                case 'summary':
+                    prompt = 'Provide a clear, concise summary of this research data highlighting key findings and insights.';
+                    break;
+                case 'patterns':
+                    prompt = 'Identify patterns, trends, and relationships in this research data. Look for both obvious and subtle patterns.';
+                    break;
+                case 'insights':
+                    prompt = 'Generate key insights and actionable recommendations based on this research data analysis.';
+                    break;
+            }
+
+            if (customInstructions) {
+                prompt += '\n\nAdditional instructions: ' + customInstructions;
+            }
+
+            prompt += '\n\nPlease provide your analysis in a well-structured format with clear headings and bullet points where appropriate.\n\nDATA:\n' + dataText;
+
+            // Show loading state
+            document.getElementById('ai-results').innerHTML = `
+                <div class="flex items-center justify-center p-8">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
+                    <span>Running AI analysis...</span>
+                </div>
+            `;
+
+            // Register AI response handler
+            window.Poe.registerHandler("ai-analysis-handler", (result, context) => {
+                const msg = result.responses[0];
+                
+                if (msg.status === "error") {
+                    document.getElementById('ai-results').innerHTML = `
+                        <div class="text-red-600 p-4 bg-red-100 dark:bg-red-900 rounded-lg">
+                            Error: ${msg.statusText || 'AI analysis failed'}
+                        </div>
+                    `;
+                } else if (msg.status === "incomplete") {
+                    // Show streaming content
+                    document.getElementById('ai-results').innerHTML = `
+                        <div class="prose prose-sm max-w-none dark:prose-invert">
+                            ${marked.parse(msg.content)}
+                        </div>
+                        <div class="mt-2 text-sm text-gray-500 italic">Generating...</div>
+                    `;
+                } else if (msg.status === "complete") {
+                    // Show final content
+                    document.getElementById('ai-results').innerHTML = `
+                        <div class="prose prose-sm max-w-none dark:prose-invert">
+                            ${marked.parse(msg.content)}
+                        </div>
+                    `;
+                    
+                    // Update stats
+                    aiInsightCount++;
+                    document.getElementById('ai-insights').textContent = aiInsightCount;
+                    addActivity(`Completed AI ${analysisType} analysis`, 'success');
+                    showNotification('AI analysis completed!', 'success');
+                    
+                    // Add to insights dashboard
+                    addInsightToDashboard(analysisType, msg.content);
+                }
+            });
+
+            try {
+                await window.Poe.sendUserMessage(
+                    `@Claude-Sonnet-4 ${prompt}`,
+                    {
+                        handler: "ai-analysis-handler",
+                        stream: true,
+                        openChat: false
+                    }
+                );
+            } catch (err) {
+                document.getElementById('ai-results').innerHTML = `
+                    <div class="text-red-600 p-4 bg-red-100 dark:bg-red-900 rounded-lg">
+                        Error starting AI analysis: ${err.message}
+                    </div>
+                `;
+                showNotification('Failed to start AI analysis', 'error');
+            }
+        }
+
+        function addInsightToDashboard(type, content) {
+            const dashboard = document.getElementById('ai-insights-dashboard');
+            const insightCard = document.createElement('div');
+            insightCard.className = 'bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm';
+            
+            const summary = content.substring(0, 200) + (content.length > 200 ? '...' : '');
+            
+            insightCard.innerHTML = `
+                <h4 class="font-semibold mb-2 text-primary">${type.charAt(0).toUpperCase() + type.slice(1)} Analysis</h4>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">${summary}</p>
+                <div class="flex justify-between items-center">
+                    <span class="text-xs text-gray-500">${new Date().toLocaleString()}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-xs text-red-500 hover:text-red-700">Remove</button>
+                </div>
+            `;
+            
+            dashboard.insertBefore(insightCard, dashboard.firstChild);
+        }
+
+        // Visualization functions
+        function createVisualization() {
+            const chartType = document.getElementById('chart-type').value;
+            const dataSource = document.getElementById('data-source').value;
+            
+            const canvas = document.getElementById('main-chart');
+            const ctx = canvas.getContext('2d');
+
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            let chartData = {};
+            
+            if (dataSource === 'quantitative' && quantitativeData.length > 0) {
+                chartData = prepareQuantitativeChartData(chartType);
+            } else if (dataSource === 'qualitative' && qualitativeData.length > 0) {
+                chartData = prepareQualitativeChartData(chartType);
+            } else if (dataSource === 'combined') {
+                chartData = prepareCombinedChartData(chartType);
+            } else {
+                showNotification('No data available for selected source', 'error');
+                return;
+            }
+
+            const config = {
+                type: chartType === 'histogram' ? 'bar' : chartType === 'box' ? 'bar' : chartType,
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `${chartType.charAt(0).toUpperCase() + chartType.slice(1)} Chart - ${dataSource.charAt(0).toUpperCase() + dataSource.slice(1)} Data`
+                        },
+                        legend: {
+                            display: chartType === 'pie' || chartType === 'line'
+                        }
+                    },
+                    scales: chartType !== 'pie' ? {
+                        y: {
+                            beginAtZero: true
+                        }
+                    } : {}
+                }
+            };
+
+            currentChart = new Chart(ctx, config);
+            addActivity(`Created ${chartType} visualization`, 'success');
+            showNotification('Visualization created successfully!', 'success');
+        }
+
+        function prepareQuantitativeChartData(chartType) {
+            const numericColumns = Object.keys(quantitativeData[0] || {}).filter(key => {
+                return quantitativeData.every(row => typeof row[key] === 'number');
+            });
+
+            if (numericColumns.length === 0) {
+                return { labels: [], datasets: [] };
+            }
+
+            const firstColumn = numericColumns[0];
+            const values = quantitativeData.map(row => row[firstColumn]);
+
+            if (chartType === 'histogram') {
+                const bins = createHistogramBins(values);
+                return {
+                    labels: bins.map(bin => `${bin.min.toFixed(1)}-${bin.max.toFixed(1)}`),
+                    datasets: [{
+                        label: 'Frequency',
+                        data: bins.map(bin => bin.count),
+                        backgroundColor: 'rgba(93, 92, 222, 0.6)',
+                        borderColor: 'rgba(93, 92, 222, 1)',
+                        borderWidth: 1
+                    }]
+                };
+            } else if (chartType === 'scatter' && numericColumns.length >= 2) {
+                const xValues = quantitativeData.map(row => row[numericColumns[0]]);
+                const yValues = quantitativeData.map(row => row[numericColumns[1]]);
+                
+                return {
+                    datasets: [{
+                        label: `${numericColumns[1]} vs ${numericColumns[0]}`,
+                        data: xValues.map((x, i) => ({ x, y: yValues[i] })),
+                        backgroundColor: 'rgba(93, 92, 222, 0.6)',
+                        borderColor: 'rgba(93, 92, 222, 1)',
+                    }]
+                };
+            } else {
+                return {
+                    labels: quantitativeData.map((_, i) => `Point ${i + 1}`),
+                    datasets: [{
+                        label: firstColumn,
+                        data: values,
+                        backgroundColor: 'rgba(93, 92, 222, 0.6)',
+                        borderColor: 'rgba(93, 92, 222, 1)',
+                        borderWidth: 1
+                    }]
+                };
+            }
+        }
+
+        function prepareQualitativeChartData(chartType) {
+            const categories = {};
+            qualitativeData.forEach(entry => {
+                categories[entry.category] = (categories[entry.category] || 0) + 1;
+            });
+
+            const labels = Object.keys(categories);
+            const data = Object.values(categories);
+            const colors = generateColors(labels.length);
+
+            return {
+                labels: labels,
+                datasets: [{
+                    label: 'Count',
+                    data: data,
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                    borderWidth: 1
+                }]
+            };
+        }
+
+        function prepareCombinedChartData(chartType) {
+            // Combine quantitative and qualitative data counts
+            const quantCount = quantitativeData.length;
+            const qualCount = qualitativeData.length;
+
+            return {
+                labels: ['Quantitative Data', 'Qualitative Data'],
+                datasets: [{
+                    label: 'Data Points',
+                    data: [quantCount, qualCount],
+                    backgroundColor: ['rgba(93, 92, 222, 0.6)', 'rgba(34, 197, 94, 0.6)'],
+                    borderColor: ['rgba(93, 92, 222, 1)', 'rgba(34, 197, 94, 1)'],
+                    borderWidth: 1
+                }]
+            };
+        }
+
+        function createHistogramBins(values, numBins = 10) {
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            const binWidth = (max - min) / numBins;
+            
+            const bins = [];
+            for (let i = 0; i < numBins; i++) {
+                bins.push({
+                    min: min + i * binWidth,
+                    max: min + (i + 1) * binWidth,
+                    count: 0
+                });
+            }
+
+            values.forEach(value => {
+                const binIndex = Math.min(Math.floor((value - min) / binWidth), numBins - 1);
+                bins[binIndex].count++;
+            });
+
+            return bins;
+        }
+
+        function generateColors(count) {
+            const background = [];
+            const border = [];
+            const baseColors = [
+                'rgba(93, 92, 222, 0.6)', 'rgba(34, 197, 94, 0.6)', 'rgba(239, 68, 68, 0.6)',
+                'rgba(251, 191, 36, 0.6)', 'rgba(168, 85, 247, 0.6)', 'rgba(6, 182, 212, 0.6)'
+            ];
+            const baseBorders = [
+                'rgba(93, 92, 222, 1)', 'rgba(34, 197, 94, 1)', 'rgba(239, 68, 68, 1)',
+                'rgba(251, 191, 36, 1)', 'rgba(168, 85, 247, 1)', 'rgba(6, 182, 212, 1)'
+            ];
+
+            for (let i = 0; i < count; i++) {
+                background.push(baseColors[i % baseColors.length]);
+                border.push(baseBorders[i % baseBorders.length]);
+            }
+
+            return { background, border };
+        }
+
+        // Quick visualization functions for quantitative tab
+        function createHistogram() {
+            if (quantitativeData.length === 0) {
+                showNotification('No quantitative data available', 'error');
+                return;
+            }
+
+            const canvas = document.getElementById('quant-chart');
+            const ctx = canvas.getContext('2d');
+
+            const numericColumns = Object.keys(quantitativeData[0]).filter(key => {
+                return quantitativeData.every(row => typeof row[key] === 'number');
+            });
+
+            if (numericColumns.length === 0) {
+                showNotification('No numeric columns found', 'error');
+                return;
+            }
+
+            const values = quantitativeData.map(row => row[numericColumns[0]]);
+            const bins = createHistogramBins(values);
+
+            if (currentChart) currentChart.destroy();
+
+            currentChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: bins.map(bin => `${bin.min.toFixed(1)}-${bin.max.toFixed(1)}`),
+                    datasets: [{
+                        label: 'Frequency',
+                        data: bins.map(bin => bin.count),
+                        backgroundColor: 'rgba(93, 92, 222, 0.6)',
+                        borderColor: 'rgba(93, 92, 222, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Histogram - ${numericColumns[0]}`
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            addActivity('Created histogram', 'success');
+        }
+
+        function createBoxPlot() {
+            showNotification('Box plot visualization would require additional statistical libraries', 'info');
+        }
+
+        function createScatterPlot() {
+            if (quantitativeData.length === 0) {
+                showNotification('No quantitative data available', 'error');
+                return;
+            }
+
+            const numericColumns = Object.keys(quantitativeData[0]).filter(key => {
+                return quantitativeData.every(row => typeof row[key] === 'number');
+            });
+
+            if (numericColumns.length < 2) {
+                showNotification('Need at least 2 numeric columns for scatter plot', 'error');
+                return;
+            }
+
+            const canvas = document.getElementById('quant-chart');
+            const ctx = canvas.getContext('2d');
+
+            const xValues = quantitativeData.map(row => row[numericColumns[0]]);
+            const yValues = quantitativeData.map(row => row[numericColumns[1]]);
+
+            if (currentChart) currentChart.destroy();
+
+            currentChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: `${numericColumns[1]} vs ${numericColumns[0]}`,
+                        data: xValues.map((x, i) => ({ x, y: yValues[i] })),
+                        backgroundColor: 'rgba(93, 92, 222, 0.6)',
+                        borderColor: 'rgba(93, 92, 222, 1)',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Scatter Plot - ${numericColumns[1]} vs ${numericColumns[0]}`
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: numericColumns[0]
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: numericColumns[1]
+                            }
+                        }
+                    }
+                }
+            });
+
+            addActivity('Created scatter plot', 'success');
+        }
+
+        // Utility functions
+        function addActivity(message, type) {
+            const activityContainer = document.getElementById('recent-activity');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const activityItem = document.createElement('div');
+            activityItem.className = 'flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-700 rounded';
+            
+            const iconColor = type === 'success' ? 'text-green-500' : type === 'error' ? 'text-red-500' : 'text-blue-500';
+            const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ';
+            
+            activityItem.innerHTML = `
+                <span class="flex items-center">
+                    <span class="${iconColor} mr-2">${icon}</span>
+                    ${message}
+                </span>
+                <span class="text-xs text-gray-500">${timestamp}</span>
+            `;
+
+            if (activityContainer.firstChild && activityContainer.firstChild.tagName !== 'P') {
+                activityContainer.insertBefore(activityItem, activityContainer.firstChild);
+            } else {
+                activityContainer.innerHTML = '';
+                activityContainer.appendChild(activityItem);
+            }
+
+            // Keep only last 5 activities
+            const activities = activityContainer.children;
+            while (activities.length > 5) {
+                activityContainer.removeChild(activities[activities.length - 1]);
+            }
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
+            
+            if (type === 'success') {
+                notification.className += ' bg-green-500 text-white';
+            } else if (type === 'error') {
+                notification.className += ' bg-red-500 text-white';
+            } else {
+                notification.className += ' bg-blue-500 text-white';
+            }
+            
+            notification.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Slide in
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        }
+
+        // Authentication system
+        let currentUser = null;
+
+        function authenticateUser() {
+            const email = document.getElementById('email-input').value.trim();
+            const accessCode = document.getElementById('access-code').value.trim();
+
+            if (!email || !accessCode) {
+                showNotification('Please enter both email and access code', 'error');
+                return;
+            }
+
+            // Authentication for Erasmus Gwidza and demo users
+            if ((email === 'erasmusmgwidza@outlook.com' && accessCode === 'admin2024') || 
+                (email === 'demo@research.edu' && accessCode === 'demo2024')) {
+                // Hide auth modal and show main app
+                document.getElementById('auth-modal').style.display = 'none';
+                document.getElementById('main-app').classList.remove('hidden');
+                
+                // Store user session
+                currentUser = {
+                    email: email,
+                    loginTime: new Date().toISOString(),
+                    sessionId: generateSessionId()
+                };
+
+                // Update header with user info
+                updateUserInfo();
+                
+                // Start session timer
+                startSessionTimer();
+                
+                showNotification('Welcome to Pilot Research Analysis Platform!', 'success');
+                addActivity('User authenticated successfully', 'success');
+                
+                // Add floating action button after authentication
+                setTimeout(() => {
+                    addFloatingActionButton();
+                }, 1000);
+            } else {
+                showNotification('Invalid credentials. Please try again.', 'error');
+            }
+        }
+
+        function generateSessionId() {
+            return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function updateUserInfo() {
+            // Add user info to header
+            const header = document.querySelector('header .container > div');
+            if (header && currentUser) {
+                const userInfo = document.createElement('div');
+                userInfo.className = 'text-right text-sm';
+                userInfo.innerHTML = `
+                    <div class="text-white/90 flex items-center">
+                        <i class="fas fa-user-circle mr-2"></i>${currentUser.email}
+                    </div>
+                    <div class="text-white/70 text-xs">
+                        <i class="fas fa-clock mr-1"></i>
+                        Login: ${new Date(currentUser.loginTime).toLocaleTimeString()}
+                    </div>
+                `;
+                header.appendChild(userInfo);
+            }
+        }
+
+        function startSessionTimer() {
+            setInterval(() => {
+                if (currentUser) {
+                    const now = new Date();
+                    const loginTime = new Date(currentUser.loginTime);
+                    const diff = Math.floor((now - loginTime) / 1000);
+                    const hours = Math.floor(diff / 3600);
+                    const minutes = Math.floor((diff % 3600) / 60);
+                    const seconds = diff % 60;
+                    
+                    const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    document.getElementById('session-time').textContent = timeStr;
+                }
+            }, 1000);
+        }
+
+
+
+        function showEmailSharingModal() {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="login-container p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4">
+                    <div class="text-center mb-6">
+                        <i class="fas fa-share-alt text-3xl text-primary-500 mb-3"></i>
+                        <h3 class="text-xl font-bold mb-2">Share Analysis Results</h3>
+                        <p class="text-gray-600 dark:text-gray-400 text-sm">Share your research findings via email</p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">
+                                <i class="fas fa-envelope mr-2"></i>Recipient Email
+                            </label>
+                            <input type="email" id="share-email" placeholder="colleague@institution.edu" 
+                                class="w-full p-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">
+                                <i class="fas fa-comment mr-2"></i>Message (Optional)
+                            </label>
+                            <textarea id="share-message" placeholder="Please review the attached research analysis..." 
+                                class="w-full h-20 p-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary-500 focus:border-transparent"></textarea>
+                        </div>
+                        
+                        <div class="flex space-x-3">
+                            <button onclick="this.closest('.fixed').remove()" class="flex-1 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200">
+                                Cancel
+                            </button>
+                            <button onclick="sendAnalysisEmail(); this.closest('.fixed').remove();" class="flex-1 bg-primary-500 hover:bg-primary-600 text-white py-3 px-4 rounded-lg transition-colors duration-200">
+                                <i class="fas fa-paper-plane mr-2"></i>Send
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function sendAnalysisEmail() {
+            const email = document.getElementById('share-email').value.trim();
+            const message = document.getElementById('share-message').value.trim();
+            
+            if (!email) {
+                showNotification('Please enter a recipient email address', 'error');
+                return;
+            }
+
+            // Simulate sending email (in real implementation, this would call an email service)
+            setTimeout(() => {
+                showNotification(`Analysis shared successfully with ${email}!`, 'success');
+                addActivity(`Shared analysis via email to ${email}`, 'success');
+            }, 1000);
+        }
+
+        function animateCounter(elementId, targetValue) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            const currentValue = parseInt(element.textContent) || 0;
+            const increment = Math.ceil((targetValue - currentValue) / 20);
+            
+            if (currentValue < targetValue) {
+                element.textContent = Math.min(currentValue + increment, targetValue);
+                setTimeout(() => animateCounter(elementId, targetValue), 50);
+            }
+        }
+
+        // Add floating action button for email sharing
+        function addFloatingActionButton() {
+            const fab = document.createElement('div');
+            fab.className = 'floating-action';
+            fab.innerHTML = `
+                <button onclick="showEmailSharingModal()" class="bg-primary-500 hover:bg-primary-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110">
+                    <i class="fas fa-share-alt text-xl"></i>
+                </button>
+            `;
+            document.body.appendChild(fab);
+        }
+
+        // Auto-save and work persistence functions
+        function saveWorkSession() {
+            const workData = {
+                sessionId: currentUser?.sessionId || 'temp_session',
+                timestamp: new Date().toISOString(),
+                user: currentUser,
+                data: {
+                    quantitativeData: quantitativeData,
+                    qualitativeData: qualitativeData,
+                    appliedCodes: appliedCodes,
+                    analysisResults: analysisResults,
+                    aiInsights: aiInsights,
+                    analysisCount: analysisCount,
+                    aiInsightCount: aiInsightCount
+                },
+                activities: Array.from(document.getElementById('recent-activity').children || []).map(activity => ({
+                    text: activity.querySelector('span')?.textContent || '',
+                    timestamp: activity.querySelector('.text-xs')?.textContent || ''
+                }))
+            };
+
+            // Store in localStorage
+            try {
+                const savedSessions = JSON.parse(localStorage.getItem('research_work_sessions') || '[]');
+                const existingIndex = savedSessions.findIndex(session => session.sessionId === workData.sessionId);
+                
+                if (existingIndex >= 0) {
+                    savedSessions[existingIndex] = workData;
+                } else {
+                    savedSessions.push(workData);
+                }
+                
+                // Keep only last 10 sessions
+                if (savedSessions.length > 10) {
+                    savedSessions.splice(0, savedSessions.length - 10);
+                }
+                
+                localStorage.setItem('research_work_sessions', JSON.stringify(savedSessions));
+                showNotification('Work automatically saved', 'success');
+                addActivity('Work session auto-saved', 'success');
+                
+                return true;
+            } catch (error) {
+                console.error('Failed to save work session:', error);
+                showNotification('Failed to save work session', 'error');
+                return false;
+            }
+        }
+
+        function loadPreviousWork() {
+            try {
+                const savedSessions = JSON.parse(localStorage.getItem('research_work_sessions') || '[]');
+                if (savedSessions.length === 0) return false;
+
+                // Get the most recent session for current user
+                const userSessions = savedSessions.filter(session => 
+                    session.user?.email === currentUser?.email
+                );
+                
+                if (userSessions.length === 0) return false;
+
+                const latestSession = userSessions[userSessions.length - 1];
+                
+                // Show restore modal
+                showRestoreWorkModal(latestSession);
+                return true;
+            } catch (error) {
+                console.error('Failed to load previous work:', error);
+                return false;
+            }
+        }
+
+        function showRestoreWorkModal(sessionData) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="login-container p-8 rounded-2xl shadow-2xl max-w-lg w-full mx-4">
+                    <div class="text-center mb-6">
+                        <i class="fas fa-history text-3xl text-primary-500 mb-3"></i>
+                        <h3 class="text-xl font-bold mb-2">Restore Previous Work</h3>
+                        <p class="text-gray-600 dark:text-gray-400 text-sm">We found a previous work session from ${new Date(sessionData.timestamp).toLocaleString()}</p>
+                    </div>
+                    
+                    <div class="space-y-4 mb-6">
+                        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                            <h4 class="font-semibold mb-2">Session Contains:</h4>
+                            <ul class="text-sm space-y-1">
+                                <li><i class="fas fa-table mr-2 text-blue-500"></i>${sessionData.data.quantitativeData.length} quantitative data points</li>
+                                <li><i class="fas fa-file-text mr-2 text-green-500"></i>${sessionData.data.qualitativeData.length} qualitative entries</li>
+                                <li><i class="fas fa-chart-bar mr-2 text-purple-500"></i>${sessionData.data.analysisCount} completed analyses</li>
+                                <li><i class="fas fa-robot mr-2 text-red-500"></i>${sessionData.data.aiInsightCount} AI insights</li>
+                                <li><i class="fas fa-tags mr-2 text-yellow-500"></i>${sessionData.data.appliedCodes.length} applied codes</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="this.closest('.fixed').remove()" class="flex-1 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200">
+                            Start Fresh
+                        </button>
+                        <button onclick="restoreWorkSession('${sessionData.sessionId}'); this.closest('.fixed').remove();" class="flex-1 bg-primary-500 hover:bg-primary-600 text-white py-3 px-4 rounded-lg transition-colors duration-200">
+                            <i class="fas fa-undo mr-2"></i>Restore Work
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function restoreWorkSession(sessionId) {
+            try {
+                const savedSessions = JSON.parse(localStorage.getItem('research_work_sessions') || '[]');
+                const sessionToRestore = savedSessions.find(session => session.sessionId === sessionId);
+                
+                if (!sessionToRestore) {
+                    showNotification('Work session not found', 'error');
+                    return;
+                }
+
+                // Restore all data
+                quantitativeData = sessionToRestore.data.quantitativeData || [];
+                qualitativeData = sessionToRestore.data.qualitativeData || [];
+                appliedCodes = sessionToRestore.data.appliedCodes || [];
+                analysisResults = sessionToRestore.data.analysisResults || {};
+                aiInsights = sessionToRestore.data.aiInsights || [];
+                analysisCount = sessionToRestore.data.analysisCount || 0;
+                aiInsightCount = sessionToRestore.data.aiInsightCount || 0;
+
+                // Update UI
+                updateDataPreview();
+                updateStats();
+                
+                // Restore applied codes display
+                const codesContainer = document.getElementById('applied-codes');
+                codesContainer.innerHTML = '';
+                appliedCodes.forEach(code => {
+                    const codeElement = document.createElement('span');
+                    codeElement.className = 'inline-block bg-primary text-white px-3 py-1 rounded-full text-sm mr-2 mb-2';
+                    codeElement.innerHTML = `${code.name} <button onclick="removeCode(${code.id})" class="ml-2 text-white hover:text-red-200">×</button>`;
+                    codesContainer.appendChild(codeElement);
+                });
+
+                showNotification('Previous work session restored successfully!', 'success');
+                addActivity('Restored previous work session', 'success');
+                
+                // Start auto-save for this session
+                startAutoSave();
+                
+            } catch (error) {
+                console.error('Failed to restore work session:', error);
+                showNotification('Failed to restore work session', 'error');
+            }
+        }
+
+        function startAutoSave() {
+            // Clear any existing auto-save interval
+            if (autoSaveInterval) {
+                clearInterval(autoSaveInterval);
+            }
+            
+            // Auto-save every 30 seconds
+            autoSaveInterval = setInterval(() => {
+                if (currentUser && (quantitativeData.length > 0 || qualitativeData.length > 0 || analysisCount > 0)) {
+                    saveWorkSession();
+                }
+            }, 30000); // 30 seconds
+        }
+
+        function exportCompleteWorkSession() {
+            const completeWorkData = {
+                metadata: {
+                    exportedAt: new Date().toISOString(),
+                    exportedBy: currentUser?.email || 'Unknown',
+                    sessionId: currentUser?.sessionId || 'unknown',
+                    platform: 'Pilot Research Analysis Platform',
+                    developer: 'Erasmus Gwidza, MSc'
+                },
+                session: {
+                    user: currentUser,
+                    loginTime: currentUser?.loginTime,
+                    sessionDuration: currentUser ? Math.floor((new Date() - new Date(currentUser.loginTime)) / 1000) : 0
+                },
+                data: {
+                    quantitative: quantitativeData,
+                    qualitative: qualitativeData,
+                    codes: appliedCodes,
+                    analyses: analysisResults,
+                    aiInsights: aiInsights
+                },
+                statistics: {
+                    totalDataPoints: quantitativeData.length + qualitativeData.length,
+                    analysesCompleted: analysisCount,
+                    aiInsightsGenerated: aiInsightCount,
+                    codesApplied: appliedCodes.length
+                },
+                activities: Array.from(document.getElementById('recent-activity').children || []).map(activity => ({
+                    action: activity.querySelector('span')?.textContent || '',
+                    timestamp: activity.querySelector('.text-xs')?.textContent || '',
+                    type: activity.querySelector('span span')?.className.includes('green') ? 'success' : 
+                          activity.querySelector('span span')?.className.includes('red') ? 'error' : 'info'
+                }))
+            };
+
+            const dataStr = JSON.stringify(completeWorkData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `complete-research-session-${new Date().toISOString().split('T')[0]}-${Date.now()}.json`;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            addActivity('Exported complete work session', 'success');
+            showNotification('Complete work session exported successfully!', 'success');
+        }
+
+        // Enhanced export function
+        function exportResults() {
+            exportCompleteWorkSession();
+            
+            // Also show email sharing modal
+            setTimeout(() => {
+                showEmailSharingModal();
+            }, 500);
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle Enter key for authentication
+            document.getElementById('email-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('access-code').focus();
+                }
+            });
+            
+            document.getElementById('access-code').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    authenticateUser();
+                }
+            });
+
+            // Add beforeunload handler to save work
+            window.addEventListener('beforeunload', function(e) {
+                if (currentUser && (quantitativeData.length > 0 || qualitativeData.length > 0 || analysisCount > 0)) {
+                    saveWorkSession();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
+Get Outlook for Android
